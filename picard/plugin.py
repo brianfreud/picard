@@ -55,9 +55,10 @@ class ExtensionPoint(QtCore.QObject):
     def __init__(self):
         QtCore.QObject.__init__(self)
         self.__items = []
+        self.__menus = []
         _extension_points.append(self)
 
-    def register(self, module, item):
+    def register(self, module, item, menu = None):
         if module.startswith("picard.plugins"):
             module = module[15:]
         else:

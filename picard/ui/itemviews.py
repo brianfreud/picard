@@ -50,22 +50,22 @@ _album_actions = ExtensionPoint()
 _cluster_actions = ExtensionPoint()
 _track_actions = ExtensionPoint()
 _file_actions = ExtensionPoint()
-_plugins_menu_submenus = ExtensionPoint()
+_plugins_menu_submenus = []
 
-def register_album_action(action):
-    _album_actions.register(action.__module__, action)
+def register_album_action(action, menu = "default"):
+    _album_actions.register(action.__module__, action, menu)
 
-def register_cluster_action(action):
-    _cluster_actions.register(action.__module__, action)
+def register_cluster_action(action, menu = "default"):
+    _cluster_actions.register(action.__module__, action, menu)
 
-def register_track_action(action):
-    _track_actions.register(action.__module__, action)
+def register_track_action(action, menu = "default"):
+    _track_actions.register(action.__module__, action, menu)
 
-def register_file_action(action):
-    _file_actions.register(action.__module__, action)
+def register_file_action(action, menu = "default"):
+    _file_actions.register(action.__module__, action, menu)
 
-def register_add_plugin_submenu(action):
-    _plugins_menu_submenus.register(action.__module__, action)
+def register_add_plugin_submenu(menu_name, menu = "default"):
+    _plugins_menu_submenus.append(menu_name)
 
 def get_match_color(similarity, basecolor):
     c1 = (basecolor.red(), basecolor.green(), basecolor.blue())
@@ -219,6 +219,7 @@ class BaseTreeView(QtGui.QTreeWidget):
             return
         obj = item.obj
         plugin_actions = None
+        plugin_menus = None
         can_view_info = self.window.view_info_action.isEnabled()
         menu = QtGui.QMenu(self)
 
@@ -239,6 +240,7 @@ class BaseTreeView(QtGui.QTreeWidget):
             menu.addAction(self.window.analyze_action)
             if isinstance(obj, UnmatchedFiles):
                 menu.addAction(self.window.cluster_action)
+            print _cluster_actions._ExtensionPoint__menus
             plugin_actions = list(_cluster_actions)
         elif isinstance(obj, ClusterList):
             menu.addAction(self.window.autotag_action)
@@ -301,11 +303,18 @@ class BaseTreeView(QtGui.QTreeWidget):
 
         if plugin_actions:
             plugin_menu = QtGui.QMenu(_("&Plugins"), menu)
-            plugin_menu.addActions(plugin_actions)
+            plugin_menus = { 'default': plugin_menu }
             plugin_menu.setIcon(self.panel.icon_plugins)
             if _plugins_menu_submenus:
                 for submenu in _plugins_menu_submenus:
-                    plugin_menu.addMenu(submenu)
+                    current_menu = QtGui.QMenu(submenu)
+                    plugin_menu.addMenu(current_menu)
+                    plugin_menus[submenu] = current_menu
+            for action in plugin_actions:
+                try:
+                    plugin_menus[action.MENU].addAction(action)
+                except AttributeError:
+                    plugin_menus['default'].addAction(action)
             menu.addSeparator()
             menu.addMenu(plugin_menu)
 
